@@ -121,7 +121,10 @@ inline std_msgs::ColorRGBA getVertexColor(const Mesh::ConstPtr& mesh,
                                      &color_msg);
       break;
     case kGray:
-      color_msg.r = color_msg.g = color_msg.b = 0.5;
+      //color_msg.r = color_msg.g = color_msg.b = 0.5;
+      //color_msg.a = 1.0;
+      colorVoxbloxToMsg(mesh->colors[index], &color_msg);
+      color_msg.g = color_msg.b = color_msg.r;
       color_msg.a = 1.0;
       break;
   }
