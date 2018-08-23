@@ -177,8 +177,10 @@ void TsdfServer::processPointCloudMessageAndInsert(
       }
     }
 
-    pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
+    //pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
+    pcl::PointCloud<pcl::PointXYZI> pointcloud_pcl;
     // pointcloud_pcl is modified below:
+    //pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
 
     timing::Timer ptcloud_timer("ptcloud_preprocess");
@@ -198,8 +200,11 @@ void TsdfServer::processPointCloudMessageAndInsert(
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));
       colors.push_back(
-          Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
-                pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+	  // quick fix for intensity
+	  Color(pointcloud_pcl.points[i].intensity, 0,0,1));
+          //Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
+          //      pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+
     }
 
     ptcloud_timer.Stop();
