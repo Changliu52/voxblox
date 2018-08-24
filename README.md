@@ -91,10 +91,10 @@ Rendered Mesh | Setup
 </center>
 
 # Installation
-To install voxblox, please install [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) or [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu).
+To install voxblox, please install [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu), [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu) or [ROS Melodic](http://wiki.ros.org/melodic/Installation/Ubuntu).
 These instructions are for Ubuntu, Voxblox will also run on OS X, but you're more or less on your own there.
 
-First install additional system dependencies (swap kinetic for indigo as necessary):
+First install additional system dependencies (swap kinetic for indigo or melodic as necessary):
 ```
 sudo apt-get install python-wstool python-catkin-tools ros-kinetic-cmake-modules protobuf-compiler autoconf
 ```
@@ -132,6 +132,33 @@ cd ~/catkin_ws/src/
 catkin build voxblox_ros
 ```
 
+# Contributing to voxblox
+These steps are only necessary if you plan on contributing to voxblox.
+
+### Code style
+
+We follow the style and best practices listed in the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+
+### Setting up the linter
+This setups a linter which checks if the code conforms to our style guide during commits.
+
+First, install the dependencies listed [here](https://github.com/ethz-asl/linter#dependencies).
+
+```bash
+cd ~/catkin_ws/src/
+git clone git@github.com:ethz-asl/linter.git
+cd linter
+echo ". $(realpath setup_linter.sh)" >> ~/.bashrc  # Or the matching file for
+                                                   # your shell.
+bash
+
+# Initialize linter in voxblox repo
+cd ~/catkin_ws/src/voxblox
+init_linter_git_hooks
+```
+For more information about the linter visit  [ethz/linter](https://github.com/ethz-asl/linter)
+
+
 # Running Voxblox
 The easiest way to test out voxblox is to try it out on a dataset.
 We have launch files for our [own dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=iros2017), the [Euroc Vicon Room datasets](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets), and the [KITTI raw datasets](http://www.cvlibs.net/datasets/kitti/) processed through [kitti_to_rosbag](https://github.com/ethz-asl/kitti_to_rosbag).
@@ -140,6 +167,9 @@ For each of these datasets, there's a launch file associated under `voxblox_ros/
 
 The easiest way to start is to download the [cow and lady dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=iros2017), edit the path to the bagfile in `cow_and_lady_dataset.launch`, and then simply:
 ```roslaunch voxblox_ros cow_and_lady_dataset.launch```
+
+An alternative dataset the [basement dataset](https://projects.asl.ethz.ch/datasets/doku.php?id=basement2018) is also avaliable. While this dataset lacks groundtruth it demonstrates the capabilities of Voxblox running on Velodyne lidar data and uses ICP corrections to compensate for a drifting pose estimate. To run the dataset edit the path to the bagfile in `basement_dataset.launch`, and then simply:
+```roslaunch voxblox_ros basement_dataset.launch```
 
 If you open rviz, you should be able to see the the mesh visualized on the `/voxblox_node/mesh` MarkerArray topic, in the `world` static frame, as shown below.
 The mesh only updates once per second (this is a setting in the launch file).
@@ -174,6 +204,7 @@ The tsdf_server and esdf_server publish and subscribe to the following topics:
   - **`freespace_pointcloud`** of type `sensor_msgs::PointCLoud2`. Only appears if `use_freespace_pointcloud` is true. Unlike the `pointcloud` topic where the given points lie on surfaces, the points in the `freespace_pointcloud` are taken to be floating in empty space. These points can assist in generating more complete freespace information in a map.
   - **`tsdf_map_in`** of type `voxblox_msgs::Layer`. Replaces the current TSDF layer with that from this topic. Voxel size and voxels per side should match.
   - **`esdf_map_in`** of type `voxblox_msgs::Layer`. Replaces the current ESDF layer with that from this topic. Voxel size and voxels per side should match.
+  - **`icp_transform`** of type `geometry_msgs::TransformStamped`. If ICP is enabled, this is the current corrected transform between the world frame and the ICP frame.
 
 ## Services
 
@@ -238,6 +269,20 @@ These parameters are only used if the integrator `method` is set to "fast".
 | `esdf_max_distance_m` | The maximum distance that the esdf will be calculated out to | 2.0 |
 | `esdf_default_distance_m` | Default distance set for unknown values and values >`esdf_max_distance_m` | 2.0 |
 
+### ICP Refinement Parameters
+ICP based refinement can be applied to the poses of the input pointclouds before merging.
+
+| Parameter | Description | Default |
+| --------------------  |:-----------:| :-------:|
+| `enable_icp` | Whether to use ICP to align all incoming pointclouds to the existing structure. | false |
+| `icp_refine_roll_pitch` | True to apply 6-dof pose correction, false for 4-dof (x, y, z, yaw) correction. | false |
+| `accumulate_icp_corrections` | Whether to accumulate transform corrections from ICP over all pointclouds. Reset at each new pointcloud if false. | true |
+| `icp_corrected_frame` | TF frame to output the ICP corrections to.| `icp_corrected` |
+| `pose_corrected_frame` | TF frame used to output the ICP corrected poses relative to the `icp_corrected_frame`.| `pose_corrected` |
+| `icp_iterations` | Number of ICP iterations to perform. | 20 |
+| `icp_subsample_keep_ratio` | Random subsampling will be used to reduce the number of points used for matching by this factor.  | 0.05 |
+| `icp_min_match_ratio` | For an ICP refinement to be accepted, at least this ratio of points in the pointcloud must fall within the truncation distance of the existing TSDF layer | 0.5 |
+
 ### Input Transform Parameters
 | Parameter | Description | Default |
 | --------------------  |:-----------:| :-------:|
@@ -263,6 +308,9 @@ These parameters are only used if the integrator `method` is set to "fast".
 | `publish_tsdf_map` | Whether to publish the complete TSDF map periodically over ROS topics. | false |
 | `publish_esdf_map` | Whether to publish the complete ESDF map periodically over ROS topics. | false |
 | `publish_tsdf_info` | Enables publishing of `tsdf_pointcloud`, `surface_pointcloud` and `occupied_nodes`. | false |
+| `publish_pointclouds` | If true the tsdf and esdf (if generated) is published as a pointcloud when the mesh is updated | false |
+| `intensity_colormap` | If the incoming pointcloud is an intensity (not RGB) pointcloud, such as from laser, this sets how the intensities will be mapped to a color. Valid options are `rainbow`, `inverse_rainbow`, `grayscale`, `inverse_grayscale`, `ironbow` (thermal) | `rainbow` |
+| `intensity_max_value` | Maximum value to use for the intensity mapping. Minimum value is always 0. | 100.0 |
 
 # Modifying Voxblox
 Here's some hints on how to extend voxblox to fit your needs...
@@ -330,4 +378,3 @@ void Block<YOUR_FANCY_VOXEL>::SerializeVoxelData(const YOUR_FANCY_VOXEL* voxels,
 # Transformations in Voxblox
 
 Voxblox uses active transforms and Hamilton quaternions. For futher details on the notation used throughout the code see [the minkindr wiki](https://github.com/ethz-asl/minkindr/wiki/Common-Transformation-Conventions)
-
