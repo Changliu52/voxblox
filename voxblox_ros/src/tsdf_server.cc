@@ -228,9 +228,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
 
   // Convert differently depending on RGB or I type.
   if (color_pointcloud) {
-    //pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
-    pcl::PointCloud<pcl::PointXYZI> pointcloud_pcl;
-
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     //pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
@@ -246,10 +244,8 @@ void TsdfServer::processPointCloudMessageAndInsert(
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));
       colors.push_back(
-	  // quick fix for intensity
-	  Color(pointcloud_pcl.points[i].intensity, 0,0,1));
-          //Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
-          //      pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+          Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
+                pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
 
     }
   } else {
@@ -268,7 +264,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));
       colors.push_back(
-          color_map_->colorLookup(pointcloud_pcl.points[i].intensity));
+          Color(pointcloud_pcl.points[i].intensity, 0,0,1));
     }
   }
   ptcloud_timer.Stop();
