@@ -264,7 +264,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));
       colors.push_back(
-          Color(pointcloud_pcl.points[i].intensity, 0,0,1));
+          Color(pointcloud_pcl.points[i].intensity, pointcloud_pcl.points[i].intensity,pointcloud_pcl.points[i].intensity,1));
     }
   }
   ptcloud_timer.Stop();
