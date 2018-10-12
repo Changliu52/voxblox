@@ -276,21 +276,22 @@ void TsdfServer::processPointCloudMessageAndInsert(
       icp_corrected_transform_.setIdentity();
     }
     static Transformation T_offset;
-    if (!icp_->runICP(tsdf_map_->getTsdfLayer(), points_C,
-                      icp_corrected_transform_ * T_G_C, &T_G_C_refined) &&
-        verbose_) {
-      ROS_INFO("ICP refinement step failed, using base Transformation");
-    } else {
-      icp_corrected_transform_ = T_G_C_refined * T_G_C.inverse();
+    const size_t num_icp_updates =
+        icp_->runICP(tsdf_map_->getTsdfLayer(), points_C,
+                     icp_corrected_transform_ * T_G_C, &T_G_C_refined);
+    if (verbose_) {
+      ROS_INFO("ICP refinement performed %zu successful update steps",
+               num_icp_updates);
+    }
+    icp_corrected_transform_ = T_G_C_refined * T_G_C.inverse();
 
-      if (!icp_->refiningRollPitch()) {
-        // its already removed internally but small floating point errors can
-        // build up if accumulating transforms
-        Transformation::Vector6 T_vec = icp_corrected_transform_.log();
-        T_vec[3] = 0.0;
-        T_vec[4] = 0.0;
-        icp_corrected_transform_ = Transformation::exp(T_vec);
-      }
+    if (!icp_->refiningRollPitch()) {
+      // its already removed internally but small floating point errors can
+      // build up if accumulating transforms
+      Transformation::Vector6 T_vec = icp_corrected_transform_.log();
+      T_vec[3] = 0.0;
+      T_vec[4] = 0.0;
+      icp_corrected_transform_ = Transformation::exp(T_vec);
     }
 
     // Publish transforms as both TF and message.
@@ -431,6 +432,7 @@ void TsdfServer::integratePointcloud(const Transformation& T_G_C,
                                      const Pointcloud& ptcloud_C,
                                      const Colors& colors,
                                      const bool is_freespace_pointcloud) {
+  CHECK_EQ(ptcloud_C.size(), colors.size());
   tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors,
                                         is_freespace_pointcloud);
 }
