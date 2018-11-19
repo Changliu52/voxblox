@@ -35,14 +35,20 @@ inline TsdfMap::Config getTsdfMapConfigFromRosParam(
 inline ICP::Config getICPConfigFromRosParam(const ros::NodeHandle& nh_private) {
   ICP::Config icp_config;
 
-  nh_private.param("icp_iterations", icp_config.iterations,
-                   icp_config.iterations);
   nh_private.param("icp_min_match_ratio", icp_config.min_match_ratio,
                    icp_config.min_match_ratio);
   nh_private.param("icp_subsample_keep_ratio", icp_config.subsample_keep_ratio,
                    icp_config.subsample_keep_ratio);
+  nh_private.param("icp_mini_batch_size", icp_config.mini_batch_size,
+                   icp_config.mini_batch_size);
   nh_private.param("icp_refine_roll_pitch", icp_config.refine_roll_pitch,
                    icp_config.refine_roll_pitch);
+  nh_private.param("icp_inital_translation_weighting",
+                   icp_config.inital_translation_weighting,
+                   icp_config.inital_translation_weighting);
+  nh_private.param("icp_inital_rotation_weighting",
+                   icp_config.inital_rotation_weighting,
+                   icp_config.inital_rotation_weighting);
 
   return icp_config;
 }
@@ -113,16 +119,29 @@ inline EsdfIntegrator::Config getEsdfIntegratorConfigFromRosParam(
       getTsdfIntegratorConfigFromRosParam(nh_private);
 
   esdf_integrator_config.min_distance_m =
-      tsdf_integrator_config.default_truncation_distance;
+      tsdf_integrator_config.default_truncation_distance / 2.0;
 
+  nh_private.param("esdf_euclidean_distance",
+                   esdf_integrator_config.full_euclidean_distance,
+                   esdf_integrator_config.full_euclidean_distance);
   nh_private.param("esdf_max_distance_m", esdf_integrator_config.max_distance_m,
                    esdf_integrator_config.max_distance_m);
+  nh_private.param("esdf_min_distance_m", esdf_integrator_config.min_distance_m,
+                   esdf_integrator_config.min_distance_m);
   nh_private.param("esdf_default_distance_m",
                    esdf_integrator_config.default_distance_m,
                    esdf_integrator_config.default_distance_m);
   nh_private.param("esdf_min_diff_m", esdf_integrator_config.min_diff_m,
                    esdf_integrator_config.min_diff_m);
-
+  nh_private.param("clear_sphere_radius",
+                   esdf_integrator_config.clear_sphere_radius,
+                   esdf_integrator_config.clear_sphere_radius);
+  nh_private.param("occupied_sphere_radius",
+                   esdf_integrator_config.occupied_sphere_radius,
+                   esdf_integrator_config.occupied_sphere_radius);
+  nh_private.param("esdf_add_occupied_crust",
+                   esdf_integrator_config.add_occupied_crust,
+                   esdf_integrator_config.add_occupied_crust);
   if (esdf_integrator_config.default_distance_m <
       esdf_integrator_config.max_distance_m) {
     esdf_integrator_config.default_distance_m =
