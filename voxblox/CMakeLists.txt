@@ -57,6 +57,7 @@ set("${PROJECT_NAME}_SRCS"
   src/utils/camera_model.cc
   src/utils/evaluation_utils.cc
   src/utils/layer_utils.cc
+  src/utils/neighbor_tools.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
   src/utils/voxel_utils.cc
@@ -154,6 +155,11 @@ catkin_add_gtest(test_bucket_queue
   test/test_bucket_queue.cc
 )
 target_link_libraries(test_bucket_queue ${PROJECT_NAME})
+
+catkin_add_gtest(test_clear_spheres
+  test/test_clear_spheres.cc
+)
+target_link_libraries(test_clear_spheres ${PROJECT_NAME})
 
 ##########
 # EXPORT #
